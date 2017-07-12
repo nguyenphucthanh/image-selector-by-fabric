@@ -31,12 +31,14 @@
         <div id="button-container">
             <button data-mode="MODE_SELECT">Select</button>
             <button data-mode="MODE_CREATE_RECT">Create Rect Selection</button>
+            <button data-mode="MODE_CREATE_CIRCLE">Create Circle Selection</button>
             <button data-mode="MODE_PAN">Move viewport</button>
             <button data-action="ZOOM_IN">Zoom in</button>
             <button data-action="ZOOM_OUT">Zoom out</button>
+            <button id="export">export</button>
         </div>
         <!--Scripts-->
-        <script src="bower_components/fabric.js/dist/fabric.min.js"></script>
+        <script src="bower_components/fabric.js/dist/fabric.js"></script>
         <script src="dist/image-selector.js"></script>
         <script>
             var container = document.getElementById('container');
@@ -49,6 +51,10 @@
                     var imgUrl = event.target.src;
                     imageSelector.addImagefromUrl(imgUrl);
                 })
+            });
+
+            document.getElementById('export').addEventListener('click', function() {
+                imageSelector.exportToImage();
             });
         </script>
     </body>
