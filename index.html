@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <!--[if lt IE 7]>
+            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+        <h1>Image Selector</h1>
+        <div class="images-list">
+            <h2>Select image to load into canvas</h2>
+            <ul>
+                <li>
+                    <a><img src="images/image-01.jpg"/></a>
+                </li>
+                <li>
+                    <a><img src="images/image-02.jpg"/></a>
+                </li>
+            </ul>
+        </div>
+        <div id="container"></div>
+        <div id="button-container">
+            <button data-mode="MODE_SELECT">Select</button>
+            <button data-mode="MODE_PAN">Move viewport</button>
+            <button data-action="ZOOM_IN">Zoom in</button>
+            <button data-action="ZOOM_OUT">Zoom out</button>
+        </div>
+        <!--Scripts-->
+        <script src="bower_components/fabric.js/dist/fabric.min.js"></script>
+        <script src="dist/image-selector.js"></script>
+        <script>
+            var container = document.getElementById('container');
+            var buttonContainer = document.getElementById('button-container');
+            var imageSelector = new ImageSelector(container, buttonContainer);
+            var listImage = document.querySelectorAll('.images-list img');
+
+            listImage.forEach(function(img) {
+                img.addEventListener('click', function(event) {
+                    var imgUrl = event.target.src;
+                    imageSelector.addImagefromUrl(imgUrl);
+                })
+            });
+        </script>
+    </body>
+</html>
