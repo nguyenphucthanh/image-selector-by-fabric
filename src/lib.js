@@ -2,6 +2,7 @@ const MODE_SELECT = 'MODE_SELECT';
 const MODE_PAN = 'MODE_PAN';
 const ZOOM_IN = 'ZOOM_IN';
 const ZOOM_OUT = 'ZOOM_OUT';
+const MODE_CREATE_RECT = 'MODE_CREATE_RECT';
 
 class ImageSelector {
     constructor(container, buttonContainer, width = 640, height = 480) {
@@ -39,8 +40,9 @@ class ImageSelector {
          */
         this.controls.btnSelect = buttonContainer.querySelector(`[data-mode="${MODE_SELECT}"]`);
         this.controls.btnMove = buttonContainer.querySelector(`[data-mode="${MODE_PAN}"]`);
-        this.controls.btnZoomIn = buttonContainer.querySelector(`[data-action="${ZOOM_IN}"]`)
-        this.controls.btnZoomOut = buttonContainer.querySelector(`[data-action="${ZOOM_OUT}"]`)
+        this.controls.btnZoomIn = buttonContainer.querySelector(`[data-action="${ZOOM_IN}"]`);
+        this.controls.btnZoomOut = buttonContainer.querySelector(`[data-action="${ZOOM_OUT}"]`);
+        this.controls.btnAddRect = buttonContainer.querySelector(`[data-mode="${MODE_CREATE_RECT}"]`);
 
         for(let btn in this.controls) {
             this.controls[btn].addEventListener('click', (ctrl) => {
@@ -85,6 +87,14 @@ class ImageSelector {
 
                     console.log(this.panOrigin);
                 }
+                else if (this.currentMode === MODE_CREATE_RECT) {
+                    let x = offsetX < muEvent.e.offsetX ? offsetX : muEvent.e.offsetX;
+                    let y = offsetY < muEvent.e.offsetY ? offsetY : muEvent.e.offsetY;
+                    let width = Math.abs(offsetX - muEvent.e.offsetX);
+                    let height = Math.abs(offsetY - muEvent.e.offsetY);
+
+                    this.createRect(x, y, width, height);
+                }
             });
         });
 
@@ -99,6 +109,43 @@ class ImageSelector {
         this.squareSelections = [];
         this.roundSelections = [];
         this.polygonSelections = [];
+    }
+
+    /**
+     * switch mode
+     * @param {*} mode 
+     */
+    switchMode(mode) {
+        this.currentMode = mode;
+        switch(mode) {
+            default:
+            case MODE_SELECT:
+                this.switchToModeSelect();
+                break;
+            case MODE_PAN:
+                this.switchToModePan();
+                break;
+            case MODE_CREATE_RECT:
+                this.switchToModeDrawSelection();
+                break;
+        }
+    }
+
+    /**
+     * do action on editor
+     * @param {*} action 
+     */
+    doAction(action) {
+        switch(action) {
+            case ZOOM_IN:
+                this.zoomIn();
+                break;
+            case ZOOM_OUT:
+                this.zoomOut();
+                break;
+            default:
+                break;
+        }
     }
 
     /**
@@ -125,37 +172,26 @@ class ImageSelector {
     }
 
     /**
-     * switch mode
-     * @param {*} mode 
-     */
-    switchMode(mode) {
-        this.currentMode = mode;
-        switch(mode) {
-            default:
-            case MODE_SELECT:
-                this.switchToModeSelect();
-                break;
-            case MODE_PAN:
-                this.switchToModePan();
-                break;
-        }
-    }
-
-    /**
      * turn on select picture mode
      */
     switchToModeSelect() {
-        this.canvas.selection = true;
-        this.currentEditingImage.selectable = true;
+        this.toggleSelection(true);
+    }
+
+    toggleSelection(enable) {
+        this.canvas.selection = enable;
+        this.currentEditingImage.selectable = enable;
         this.squareSelections.forEach((item) => {
-            item.selectable = true;
+            item.selectable = enable;
         });
         this.roundSelections.forEach((item) => {
-            item.selectable = true;
+            item.selectable = enable;
         });
         this.polygonSelections.forEach((item) => {
-            item.selectable = true;
+            item.selectable = enable;
         });
+        this.canvas.discardActiveGroup();
+        this.canvas.discardActiveObject();
         this.canvas.renderAll();
     }
 
@@ -163,35 +199,12 @@ class ImageSelector {
      * switch to selection mode
      */
     switchToModePan() {
-        this.canvas.selection = false;
-        this.currentEditingImage.selectable = false;
-        this.squareSelections.forEach((item) => {
-            item.selectable = false;
-        });
-        this.roundSelections.forEach((item) => {
-            item.selectable = false;
-        });
-        this.polygonSelections.forEach((item) => {
-            item.selectable = false;
-        });
-        this.canvas.renderAll();
+        this.toggleSelection(false);
     }
 
-    /**
-     * do action on editor
-     * @param {*} action 
-     */
-    doAction(action) {
-        switch(action) {
-            case ZOOM_IN:
-                this.zoomIn();
-                break;
-            case ZOOM_OUT:
-                this.zoomOut();
-                break;
-            default:
-                break;
-        }
+    switchToModeDrawSelection() {
+        this.toggleSelection(false);
+        this.canvas.selection = true;
     }
 
     /**
@@ -214,5 +227,24 @@ class ImageSelector {
             zoom--;
             this.canvas.setZoom(zoom);
         }
+    }
+
+    createRect(x, y, width, height) {
+        this.switchMode(MODE_SELECT);
+
+        let rect = new fabric.Rect({
+            left: x / this.canvas.getZoom(),
+            top: y / this.canvas.getZoom(),
+            width: width / this.canvas.getZoom(),
+            height: height / this.canvas.getZoom(),
+            fill: 'rgba(0,0,0,0)',
+            strokeWidth: 1,
+            strokeDashArray: [3,3],
+            stroke: '#000000'
+        });
+
+        this.squareSelections.push(rect);
+        this.canvas.add(rect);
+        this.canvas.setActiveObject(rect);
     }
 }
