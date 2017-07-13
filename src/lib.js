@@ -4,15 +4,12 @@ const ZOOM_IN = 'ZOOM_IN';
 const ZOOM_OUT = 'ZOOM_OUT';
 const MODE_CREATE_RECT = 'MODE_CREATE_RECT';
 const MODE_CREATE_CIRCLE = 'MODE_CREATE_CIRCLE';
+const MODE_CREATE_POLYGON = 'MODE_CREATE_POLYGON';
+const ROTATE = 'ROTATE';
 
 class ImageSelector {
-	constructor(container, buttonContainer, width = 640, height = 480) {
-		if (!container || !buttonContainer) {
-			alert('Please identity a container for containing editor!');
-		}
-		this.minZoom = 1;
-		this.maxZoom = 10;
-		this.currentMode = MODE_SELECT;
+	
+	initEditor() {
 		this.currentEditingImage = null;
 		this.squareSelections = [];
 		this.roundSelections = [];
@@ -23,6 +20,17 @@ class ImageSelector {
 			y: 0
 		};
 		this.isPanning = false;
+		this.drawingPolygonPoints = [];
+		this.drawingPolygon = null;
+		this.switchMode(MODE_SELECT);
+	}
+
+	constructor(container, buttonContainer, width = 640, height = 480) {
+		if (!container || !buttonContainer) {
+			alert('Please identity a container for containing editor!');
+		}
+		this.minZoom = 0.2;
+		this.maxZoom = 5;
 
 		/**
          * append canvas
@@ -38,21 +46,25 @@ class ImageSelector {
 		this.canvas = new fabric.Canvas(canvas, {
 			preserveObjectStacking: true
 		});
+		
+		this.initEditor();
 
 		/**
          * get controls
          */
-		this.controls.btnSelect = buttonContainer.querySelector(`[data-mode="${MODE_SELECT}"]`);
-		this.controls.btnMove = buttonContainer.querySelector(`[data-mode="${MODE_PAN}"]`);
-		this.controls.btnZoomIn = buttonContainer.querySelector(`[data-action="${ZOOM_IN}"]`);
-		this.controls.btnZoomOut = buttonContainer.querySelector(`[data-action="${ZOOM_OUT}"]`);
-		this.controls.btnAddRect = buttonContainer.querySelector(`[data-mode="${MODE_CREATE_RECT}"]`);
-		this.controls.btnAddCircle = buttonContainer.querySelector(`[data-mode="${MODE_CREATE_CIRCLE}"]`);
+		this.controls.MODE_SELECT = buttonContainer.querySelector(`[data-mode="${MODE_SELECT}"]`);
+		this.controls.MODE_PAN = buttonContainer.querySelector(`[data-mode="${MODE_PAN}"]`);
+		this.controls.ZOOM_IN = buttonContainer.querySelector(`[data-action="${ZOOM_IN}"]`);
+		this.controls.ZOOM_OUT = buttonContainer.querySelector(`[data-action="${ZOOM_OUT}"]`);
+		this.controls.MODE_CREATE_RECT = buttonContainer.querySelector(`[data-mode="${MODE_CREATE_RECT}"]`);
+		this.controls.MODE_CREATE_CIRCLE = buttonContainer.querySelector(`[data-mode="${MODE_CREATE_CIRCLE}"]`);
+		this.controls.ROTATE = buttonContainer.querySelector(`[data-action="${ROTATE}"]`);
+		this.controls.MODE_CREATE_POLYGON = buttonContainer.querySelector(`[data-mode="${MODE_CREATE_POLYGON}"]`);
 
 		for (let btn in this.controls) {
 			this.controls[btn].addEventListener('click', ctrl => {
-				let mode = ctrl.target.getAttribute('data-mode');
-				let action = ctrl.target.getAttribute('data-action');
+				let mode = ctrl.currentTarget.getAttribute('data-mode');
+				let action = ctrl.currentTarget.getAttribute('data-action');
 				if (mode) {
 					this.switchMode(mode);
 				}
@@ -102,12 +114,42 @@ class ImageSelector {
 				this.isPanning = false;
 			} else if (this.currentMode === MODE_CREATE_RECT) {
 				let { x, y } = this.getPointer(e);
-				this.createRect(x0 < x ? x0 : x, y0 < y ? y0 : y, Math.abs(x0 - x), Math.abs(y0 - y));
+                let left = x0 < x ? x0 : x;
+                let top = y0 < y ? y0 : y;
+                let width = Math.abs(x0 - x);
+                let height = Math.abs(y0 - y);
+				this.createRect(left, top, width, height);
 			} else if (this.currentMode === MODE_CREATE_CIRCLE) {
 				let { x, y } = this.getPointer(e);
-				this.createCircle(x0 < x ? x0 : x, y0 < y ? y0 : y, Math.abs(x0 - x) / 2);
+                let left = x0 < x ? x0 : x;
+                let top = y0 < y ? y0 : y;
+                let r = Math.abs(x0 - x) / 2;
+                let height = Math.abs(y0 - y);
+				this.createCircle(left, top, r, height);
+			} else if (this.currentMode === MODE_CREATE_POLYGON) {
+				let point = this.getPointer(e);
+				this.drawingPolygonPoints.push(point);
+				this.drawPolygon();
 			}
 		});
+
+		this.canvas.on('mouse:dblclick', (e) => {
+			if (this.currentMode === MODE_CREATE_POLYGON) {
+				let point = this.getPointer(e);
+				
+				this.drawingPolygonPoints.push(point);
+				this.drawPolygon(true);
+			}
+		});
+
+		fabric.util.addListener(this.canvas.upperCanvasEl, 'dblclick', (event) => {
+			let target = this.canvas.findTarget(event);
+			this.canvas.fire('mouse:dblclick', {
+				target: target,
+				e: event
+			});
+		});
+
 	}
 
 	/**
@@ -115,10 +157,7 @@ class ImageSelector {
      */
 	resetEditor() {
 		this.canvas.clear();
-		this.currentEditingImage = null;
-		this.squareSelections = [];
-		this.roundSelections = [];
-		this.polygonSelections = [];
+		this.initEditor();
 	}
 
 	/**
@@ -126,7 +165,17 @@ class ImageSelector {
      * @param {*} mode 
      */
 	switchMode(mode) {
+		console.log('SWITCH_MODE', mode);
 		this.currentMode = mode;
+		for (let ctrl in this.controls) {
+			if (this.controls[ctrl].classList.contains('active')) {
+				this.controls[ctrl].classList.remove('active');
+			}
+
+			if (ctrl === mode) {
+				this.controls[ctrl].classList.add('active');
+			}
+		}
 		switch (mode) {
 			default:
 			case MODE_SELECT:
@@ -138,6 +187,9 @@ class ImageSelector {
 			case MODE_CREATE_RECT:
 			case MODE_CREATE_CIRCLE:
 				this.switchToModeDrawSelection();
+				break;
+			case MODE_CREATE_POLYGON:
+				this.switchToModePolygon();
 				break;
 		}
 	}
@@ -153,6 +205,9 @@ class ImageSelector {
 				break;
 			case ZOOM_OUT:
 				this.zoomOut();
+				break;
+			case ROTATE:
+				this.rotate();
 				break;
 			default:
 				break;
@@ -171,6 +226,7 @@ class ImageSelector {
 
 		let img = fabric.Image.fromURL(imageUrl, img => {
 			this.currentEditingImage = img;
+
 			// let wRatio = this.canvas.width / img.width;
 			// let hRatio = this.canvas.height / img.height;
 			// let scale = wRatio > hRatio ? hRatio : wRatio;
@@ -178,6 +234,7 @@ class ImageSelector {
 			//     scaleX: scale,
 			//     scaleY: scale
 			// });
+
 			this.canvas.add(img);
 			this.canvas.sendToBack(img);
 
@@ -192,6 +249,10 @@ class ImageSelector {
 		this.toggleSelection(true);
 	}
 
+	/**
+	 * enable / disable selection / object selectable
+	 * @param {*} enable 
+	 */
 	toggleSelection(enable) {
 		this.canvas.selection = enable;
 		if (this.currentEditingImage) this.currentEditingImage.selectable = enable;
@@ -216,9 +277,22 @@ class ImageSelector {
 		this.toggleSelection(false);
 	}
 
+	/**
+	 * switch to drawing shape mode (not fabric draw mode)
+	 */
 	switchToModeDrawSelection() {
+		this.canvas.discardActiveObject();
 		this.toggleSelection(false);
 		this.canvas.selection = true;
+	}
+
+	/**
+	 * start drawing polying mode
+	 */
+	switchToModePolygon() {
+		this.drawingPolygonPoints = [];
+		this.drawingPolygon = null;
+		this.toggleSelection(false);
 	}
 
 	/**
@@ -227,7 +301,7 @@ class ImageSelector {
 	zoomIn() {
 		let zoom = this.canvas.getZoom();
 		if (zoom < this.maxZoom) {
-			zoom++;
+			zoom += 0.1;
 			this.canvas.setZoom(zoom);
 		}
 	}
@@ -238,11 +312,30 @@ class ImageSelector {
 	zoomOut() {
 		let zoom = this.canvas.getZoom();
 		if (zoom > this.minZoom) {
-			zoom--;
+			zoom -= 0.1;
 			this.canvas.setZoom(zoom);
 		}
 	}
 
+	/**
+	 * Rotate active object of the canvas
+	 */
+	rotate() {
+		let activeObject = this.canvas.getActiveObject();
+		if (activeObject) {
+			let currentRotate = activeObject.getAngle();
+			activeObject.setAngle(currentRotate - 90);
+			this.canvas.renderAll();
+		}
+	}
+
+	/**
+	 * draw rect
+	 * @param {*} x 
+	 * @param {*} y 
+	 * @param {*} width 
+	 * @param {*} height 
+	 */
 	createRect(x, y, width, height) {
 		this.switchMode(MODE_SELECT);
 
@@ -251,7 +344,7 @@ class ImageSelector {
 			top: y,
 			width: width,
 			height: height,
-			fill: 'transparent',
+			fill: 'rgba(255, 255, 255, 0.5)',
 			strokeWidth: 1,
 			strokeDashArray: [3, 3],
 			stroke: '#000000'
@@ -263,18 +356,29 @@ class ImageSelector {
 		this.canvas.setActiveObject(shape);
 	}
 
-	createCircle(x, y, r) {
+	/**
+	 * draw circle
+	 * @param {*} x 
+	 * @param {*} y 
+	 * @param {*} r 
+	 * @param {*} height 
+	 */
+	createCircle(x, y, r, height) {
 		this.switchMode(MODE_SELECT);
 
 		let shape = new fabric.Circle({
 			left: x,
 			top: y,
 			radius: r,
-			fill: 'rgba(0,0,0,0)',
+			fill: 'rgba(255, 255, 255, 0.5)',
 			strokeWidth: 1,
 			strokeDashArray: [3, 3],
 			stroke: '#000000'
 		});
+
+        let scaleY = height / (r * 2);
+        shape.setScaleY(scaleY);
+        
 
 		this.roundSelections.push(shape);
 		this.canvas.add(shape);
@@ -282,53 +386,93 @@ class ImageSelector {
 		this.canvas.setActiveObject(shape);
 	}
 
+	/**
+	 * draw polygon
+	 * @param {*} lastPoint 
+	 */
+	drawPolygon(lastPoint) {
+		// remove previous state of polygon
+		if (this.drawingPolygon) {
+			this.canvas.remove(this.drawingPolygon);
+		}
+
+		// prepare new state of polygon
+		let newPolygon = new fabric.Polygon(this.drawingPolygonPoints, {
+			strokeWidth: 0,
+			fill: 'rgba(255, 255, 255, 0.5)',
+			selectable: false
+		});
+
+		// set as currenly drawing polygon, draw to canvas, and set as active
+		this.drawingPolygon = newPolygon;
+		this.canvas.add(this.drawingPolygon);
+		this.canvas.setActiveObject(this.drawingPolygon);
+
+		// If this is the last point of polygon
+		if (lastPoint) {
+			// new polygon should be selectable and active after creating
+			newPolygon.selectable = true;
+			this.canvas.setActiveObject(newPolygon);
+
+			// reset temp variable of polygon
+			this.drawingPolygon = null;
+			this.drawingPolygonPoints = [];
+
+			// back to SELECT mode
+			this.switchMode(MODE_SELECT);
+
+			// push new Polygon to selection array
+			this.polygonSelections.push(newPolygon);
+		}
+
+		this.canvas.renderAll();
+
+	}
+
+	/**
+	 * export to image
+	 */
     exportToImage() {
-        this.squareSelections.forEach(shape => {
-            this.exportShapeToImage(shape);
+        let squares = this.squareSelections.map(shape => {
+            return this.exportShapeToImage(shape);
         });
 
-        this.roundSelections.forEach(shape => {
-            this.exportShapeToImage(shape);
+        let rounds = this.roundSelections.map(shape => {
+            return this.exportShapeToImage(shape);
         });
+
+		let pols = this.polygonSelections.map(shape => {
+			return this.exportShapeToImage(shape);
+		});
+
+		return [...squares, ...rounds, ...pols];
     }
 
+	/**
+	 * Export a selection area to a separated image
+	 * @param {*} originalShape 
+	 */
 	exportShapeToImage(originalShape) {
 		let offscreenCanvas = document.createElement('canvas');
-		offscreenCanvas.width = this.canvas.width;
-		offscreenCanvas.height = this.canvas.height;
+		offscreenCanvas.width = this.currentEditingImage.getWidth();
+		offscreenCanvas.height = this.currentEditingImage.getHeight();
 
 		let context = offscreenCanvas.getContext('2d');
 
 		let image = new Image();
+		let newImg = new Image();
 
-		image.onload = () => {
-			context.drawImage(
-				image,
-				this.currentEditingImage.getLeft(),
-				this.currentEditingImage.getTop(),
-				this.currentEditingImage.getWidth(),
-				this.currentEditingImage.getHeight()
-			);
+		this.currentEditingImage.render(context);
 
-			// context.clip();
-
-			// context.fillStyle = '#FFFFFF';
-			// context.fillRect(100 , 100, 100, 100);
-
-			let shape = originalShape.clone();
+		let shape = originalShape.clone();
 			shape.globalCompositeOperation = 'destination-in';
 			shape.setFill('red');
 			shape.setStrokeWidth(0);
 			shape.render(context);
 
-			let newImg = new Image();
-			newImg.onload = () => {
-				document.querySelector('body').appendChild(newImg);
-			};
-			newImg.src = this.trim(offscreenCanvas).toDataURL('image/png');
-		};
+		newImg.src = this.trim(offscreenCanvas).toDataURL('image/png');
 
-		image.src = this.currentEditingImage.getSrc();
+		return newImg;
 	}
 
 	trim(c) {

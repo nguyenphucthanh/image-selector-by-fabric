@@ -2,60 +2,91 @@
 <!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
 <!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
 <!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title></title>
-        <meta name="description" content="">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="style.css">
-    </head>
-    <body>
+<!--[if gt IE 8]><!-->
+<html class="no-js">
+<!--<![endif]-->
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title></title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="bower_components/components-font-awesome/css/font-awesome.css" />
+</head>
+
+<body>
+    <div class="container">
         <!--[if lt IE 7]>
             <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
         <h1>Image Selector</h1>
         <div class="images-list">
             <h2>Select image to load into canvas</h2>
-            <ul>
+            <ul class="list-inline">
                 <li>
-                    <a><img src="images/image-01.jpg"/></a>
+                    <a class="thumbnail"><img src="images/image-01.jpg"/></a>
                 </li>
                 <li>
-                    <a><img src="images/image-02.jpg"/></a>
+                    <a class="thumbnail"><img src="images/image-02.jpg"/></a>
                 </li>
             </ul>
         </div>
-        <div id="container"></div>
-        <div id="button-container">
-            <button data-mode="MODE_SELECT">Select</button>
-            <button data-mode="MODE_CREATE_RECT">Create Rect Selection</button>
-            <button data-mode="MODE_CREATE_CIRCLE">Create Circle Selection</button>
-            <button data-mode="MODE_PAN">Move viewport</button>
-            <button data-action="ZOOM_IN">Zoom in</button>
-            <button data-action="ZOOM_OUT">Zoom out</button>
-            <button id="export">export</button>
+        <div class="row">
+            <div class="col-sm-9">
+
+                <div id="container"></div>
+                <div id="button-container" class="btn-group">
+                    <button data-mode="MODE_SELECT" class="btn" title="Select"><i class="fa fa-hand-pointer-o"></i></button>
+                    <button data-mode="MODE_CREATE_RECT" class="btn" title="Create Rect Selection"><i class="fa fa-square-o"></i></button>
+                    <button data-mode="MODE_CREATE_CIRCLE" class="btn" title="Create Circle Selection"><i class="fa fa-circle-o"></i></button>
+                    <button data-mode="MODE_CREATE_POLYGON" class="btn" title="Create Polygon Selection"><i class="fa fa-star-o"></i></button>
+                    <button data-mode="MODE_PAN" class="btn" title="Move viewport"><i class="fa fa-arrows"></i></button>
+                    <button data-action="ROTATE" class="btn" title="Rotate"><i class="fa fa-rotate-left"></i></button>
+                    <button data-action="ZOOM_IN" class="btn" title="Zoom in"><i class="fa fa-search-plus"></i></button>
+                    <button data-action="ZOOM_OUT" class="btn" title="Zoom out"><i class="fa fa-search-minus"></i></button>
+                    <button id="export" class="btn" title="export">EXPORT</button>
+                    <button id="reset" class="btn" title="reset">RESET</button>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <h2>Export</h2>
+                <div id="export-container">
+                </div>
+            </div>
         </div>
-        <!--Scripts-->
-        <script src="bower_components/fabric.js/dist/fabric.js"></script>
-        <script src="dist/image-selector.js"></script>
-        <script>
-            var container = document.getElementById('container');
-            var buttonContainer = document.getElementById('button-container');
-            var imageSelector = new ImageSelector(container, buttonContainer);
-            var listImage = document.querySelectorAll('.images-list img');
+    </div>
+    <!--Scripts-->
+    <script src="bower_components/fabric.js/dist/fabric.js"></script>
+    <script src="dist/image-selector.js"></script>
+    <script>
+        var container = document.getElementById('container');
+        var buttonContainer = document.getElementById('button-container');
+        var imageSelector = new ImageSelector(container, buttonContainer);
+        var listImage = document.querySelectorAll('.images-list img');
 
-            listImage.forEach(function(img) {
-                img.addEventListener('click', function(event) {
-                    var imgUrl = event.target.src;
-                    imageSelector.addImagefromUrl(imgUrl);
-                })
-            });
+        listImage.forEach(function (img) {
+            img.addEventListener('click', function (event) {
+                var imgUrl = event.target.src;
+                imageSelector.addImagefromUrl(imgUrl);
+            })
+        });
 
-            document.getElementById('export').addEventListener('click', function() {
-                imageSelector.exportToImage();
+        document.getElementById('export').addEventListener('click', function () {
+            var images = imageSelector.exportToImage();
+            document.getElementById('export-container').innerHTML = '';
+            images.forEach(function (image) {
+                image.setAttribute('class', 'thumbnail img-responsive');
+                document.getElementById('export-container').appendChild(image);
             });
-        </script>
-    </body>
+        });
+
+        document.getElementById('reset').addEventListener('click', function() {
+            imageSelector.resetEditor();
+        });
+    </script>
+</body>
+
 </html>

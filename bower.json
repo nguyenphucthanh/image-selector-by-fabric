@@ -1,0 +1,20 @@
+{
+  "name": "image-selector-by-fabric",
+  "description": "Image Selector by Fabric JS",
+  "main": "index.js",
+  "authors": [
+    "Thanh Nguyen <Thanh.NguyenPhuc@nashtechglobal.com>"
+  ],
+  "license": "ISC",
+  "homepage": "https://github.com/nguyenphucthanh/image-selector-by-fabric",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "fabric.js": "fabric#^1.7.16"
+  }
+}
