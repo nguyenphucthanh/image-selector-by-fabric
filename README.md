@@ -1,4 +1,6 @@
 # image-selector-by-fabric
+## Running Demo
+`$ npm install && npm start`
 ## Usage
 ### Init
 ```html
