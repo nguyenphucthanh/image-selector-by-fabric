@@ -14,7 +14,6 @@ class ImageSelector {
 		this.squareSelections = [];
 		this.roundSelections = [];
 		this.polygonSelections = [];
-		this.controls = {};
 		this.panOrigin = {
 			x: 0,
 			y: 0
@@ -52,6 +51,8 @@ class ImageSelector {
 		/**
          * get controls
          */
+		
+		this.controls = {};
 		this.controls.MODE_SELECT = buttonContainer.querySelector(`[data-mode="${MODE_SELECT}"]`);
 		this.controls.MODE_PAN = buttonContainer.querySelector(`[data-mode="${MODE_PAN}"]`);
 		this.controls.ZOOM_IN = buttonContainer.querySelector(`[data-action="${ZOOM_IN}"]`);
