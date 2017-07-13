@@ -1,6 +1,11 @@
 # image-selector-by-fabric
 ## Running Demo
-`$ npm install && bower install && npm start`
+```
+$ npm install -g npm-run-all
+```
+```
+$ npm install && bower install && npm start
+```
 ## Usage
 ### Init
 ```html
