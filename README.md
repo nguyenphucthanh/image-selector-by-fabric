@@ -1,7 +1,9 @@
 # image-selector-by-fabric
 ## Running Demo
+You need these global packages
 ```
 $ npm install -g npm-run-all
+$ npm install -g nodemon
 ```
 ```
 $ npm install && bower install && npm start
