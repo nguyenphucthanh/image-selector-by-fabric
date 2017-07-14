@@ -24,21 +24,37 @@ class ImageSelector {
 		this.switchMode(MODE_SELECT);
 	}
 
-	constructor(container, buttonContainer, width = 640, height = 480) {
+	constructor(container, buttonContainer, options) {
+		/**
+		 * define default options for this plugin
+		 */
+		let defaultOptions = {
+			width: 640,
+			height: 480
+		};
+
+		this.options = Object.assign({}, defaultOptions, options);
+
+		/**
+		 * If container or buttonContainer is not passed into constructor
+		 * then return
+		 */
 		if (!container || !buttonContainer) {
 			alert('Please identity a container for containing editor!');
+			return;
 		}
+		
 		this.minZoom = 0.2;
 		this.maxZoom = 5;
 
 		/**
-         * append canvas
+         * append canvas to container
          */
 
 		let canvas = document.createElement('canvas');
 		canvas.id = 'image-selector-canvas';
-		canvas.width = width;
-		canvas.height = height;
+		canvas.width = this.options.width;
+		canvas.height = this.options.height;
 
 		container.appendChild(canvas);
 
@@ -49,7 +65,7 @@ class ImageSelector {
 		this.initEditor();
 
 		/**
-         * get controls
+         * get controls from buttonContainer
          */
 		
 		this.controls = {};
@@ -62,6 +78,9 @@ class ImageSelector {
 		this.controls.ROTATE = buttonContainer.querySelector(`[data-action="${ROTATE}"]`);
 		this.controls.MODE_CREATE_POLYGON = buttonContainer.querySelector(`[data-mode="${MODE_CREATE_POLYGON}"]`);
 
+		/**
+		 * Binding events to buttons
+		 */
 		for (let btn in this.controls) {
 			this.controls[btn].addEventListener('click', ctrl => {
 				let mode = ctrl.currentTarget.getAttribute('data-mode');
@@ -81,6 +100,10 @@ class ImageSelector {
 		this.bindCanvasEvent();
 	}
 
+	/**
+	 * get exact coord of pointer in canvas
+	 * @param {Event} event 
+	 */
 	getPointer(event) {
 		let pointer = this.canvas.getPointer(event.e, false);
 		return pointer;
@@ -163,10 +186,26 @@ class ImageSelector {
 
 	/**
      * switch mode
-     * @param {*} mode 
+     * @param {string} mode 
      */
 	switchMode(mode) {
+		/**
+		 * if user hit the same MODE, return
+		 */
+		if (mode === this.currentMode) {
+			return;
+		}
+
 		console.log('SWITCH_MODE', mode);
+
+		/**
+		 * Special case:
+		 * current mode: MODE_CREATE_POLYGON
+		 */
+		if (this.currentMode === MODE_CREATE_POLYGON) {
+			this.drawPolygon(true);
+		}
+
 		this.currentMode = mode;
 		for (let ctrl in this.controls) {
 			if (this.controls[ctrl].classList.contains('active')) {
@@ -197,7 +236,7 @@ class ImageSelector {
 
 	/**
      * do action on editor
-     * @param {*} action 
+     * @param {string} action 
      */
 	doAction(action) {
 		switch (action) {
@@ -217,7 +256,7 @@ class ImageSelector {
 
 	/**
      * Add new image to editor
-     * @param {*} imageUrl 
+     * @param {string} imageUrl 
      */
 	addImagefromUrl(imageUrl) {
 		if (this.currentEditingImage) {
@@ -252,7 +291,7 @@ class ImageSelector {
 
 	/**
 	 * enable / disable selection / object selectable
-	 * @param {*} enable 
+	 * @param {boolean} enable 
 	 */
 	toggleSelection(enable) {
 		this.canvas.selection = enable;
@@ -332,10 +371,10 @@ class ImageSelector {
 
 	/**
 	 * draw rect
-	 * @param {*} x 
-	 * @param {*} y 
-	 * @param {*} width 
-	 * @param {*} height 
+	 * @param {number} x 
+	 * @param {number} y 
+	 * @param {number} width 
+	 * @param {number} height 
 	 */
 	createRect(x, y, width, height) {
 		this.switchMode(MODE_SELECT);
@@ -359,10 +398,10 @@ class ImageSelector {
 
 	/**
 	 * draw circle
-	 * @param {*} x 
-	 * @param {*} y 
-	 * @param {*} r 
-	 * @param {*} height 
+	 * @param {number} x 
+	 * @param {number} y 
+	 * @param {number} r 
+	 * @param {number} height 
 	 */
 	createCircle(x, y, r, height) {
 		this.switchMode(MODE_SELECT);
@@ -389,7 +428,7 @@ class ImageSelector {
 
 	/**
 	 * draw polygon
-	 * @param {*} lastPoint 
+	 * @param {boolean} lastPoint if this param is passed as true the the drawing Polygon will be completed
 	 */
 	drawPolygon(lastPoint) {
 		// remove previous state of polygon
@@ -432,6 +471,7 @@ class ImageSelector {
 
 	/**
 	 * export to image
+	 * @return Array<Image>
 	 */
     exportToImage() {
         let squares = this.squareSelections.map(shape => {
@@ -451,7 +491,8 @@ class ImageSelector {
 
 	/**
 	 * Export a selection area to a separated image
-	 * @param {*} originalShape 
+	 * @param {Object} originalShape this is Fabric Object class
+	 * @return Image
 	 */
 	exportShapeToImage(originalShape) {
 		let offscreenCanvas = document.createElement('canvas');
@@ -476,6 +517,9 @@ class ImageSelector {
 		return newImg;
 	}
 
+	/**
+	 * @param {HTMLElement} c canvas element
+	 */
 	trim(c) {
 		var ctx = c.getContext('2d'),
 			copy = document.createElement('canvas').getContext('2d'),

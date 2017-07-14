@@ -27,8 +27,22 @@ $ npm install && bower install && npm start
 ```javascript
 var container = document.getElementById('container');
 var buttonContainer = document.getElementById('button-container');
-var imageSelect = new ImageSelector(container, buttonContainer);
+var options = {
+    width: 640, height: 480
+};
+var imageSelect = new ImageSelector(container, buttonContainer, options);
 ```
+### Constructor Params
+- `container` (`HTMLElement`) (required): this is the place that will contain rendered canvas.
+- `buttonContainer` (`HTMLElement`) (required): this is the place contains your buttons. You should write all your buttons by yourself. You can style your buttons by your way but you have to keep all `data-mode` and `data-action` as above example.
+- `options` (`Object`) (optional): Replace default editor options with yours.
+
+#### Options
+|Name   |Type   |Default    |Description        |
+|-------|-------|-----------|-------------------|
+|width  |number |640        |editor width       |
+|height |number |480        |editor height      |
+
 ### Methods
 #### Reset
 Reset whole editor
