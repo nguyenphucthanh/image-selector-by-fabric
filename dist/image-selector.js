@@ -34,28 +34,41 @@ var ImageSelector = function () {
 		}
 	}]);
 
-	function ImageSelector(container, buttonContainer) {
+	function ImageSelector(container, buttonContainer, options) {
 		var _this = this;
-
-		var width = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 640;
-		var height = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 480;
 
 		_classCallCheck(this, ImageSelector);
 
+		/**
+   * define default options for this plugin
+   */
+		var defaultOptions = {
+			width: 640,
+			height: 480
+		};
+
+		this.options = Object.assign({}, defaultOptions, options);
+
+		/**
+   * If container or buttonContainer is not passed into constructor
+   * then return
+   */
 		if (!container || !buttonContainer) {
 			alert('Please identity a container for containing editor!');
+			return;
 		}
+
 		this.minZoom = 0.2;
 		this.maxZoom = 5;
 
 		/**
-         * append canvas
+         * append canvas to container
          */
 
 		var canvas = document.createElement('canvas');
 		canvas.id = 'image-selector-canvas';
-		canvas.width = width;
-		canvas.height = height;
+		canvas.width = this.options.width;
+		canvas.height = this.options.height;
 
 		container.appendChild(canvas);
 
@@ -66,7 +79,7 @@ var ImageSelector = function () {
 		this.initEditor();
 
 		/**
-         * get controls
+         * get controls from buttonContainer
          */
 
 		this.controls = {};
@@ -79,6 +92,9 @@ var ImageSelector = function () {
 		this.controls.ROTATE = buttonContainer.querySelector('[data-action="' + ROTATE + '"]');
 		this.controls.MODE_CREATE_POLYGON = buttonContainer.querySelector('[data-mode="' + MODE_CREATE_POLYGON + '"]');
 
+		/**
+   * Binding events to buttons
+   */
 		for (var btn in this.controls) {
 			this.controls[btn].addEventListener('click', function (ctrl) {
 				var mode = ctrl.currentTarget.getAttribute('data-mode');
@@ -97,6 +113,12 @@ var ImageSelector = function () {
          */
 		this.bindCanvasEvent();
 	}
+
+	/**
+  * get exact coord of pointer in canvas
+  * @param {Event} event 
+  */
+
 
 	_createClass(ImageSelector, [{
 		key: 'getPointer',
@@ -152,12 +174,12 @@ var ImageSelector = function () {
 					_this2.createRect(left, top, width, height);
 				} else if (_this2.currentMode === MODE_CREATE_CIRCLE) {
 					var _getPointer3 = _this2.getPointer(e),
-					    _x3 = _getPointer3.x,
+					    _x = _getPointer3.x,
 					    _y = _getPointer3.y;
 
-					var _left = x0 < _x3 ? x0 : _x3;
+					var _left = x0 < _x ? x0 : _x;
 					var _top = y0 < _y ? y0 : _y;
-					var r = Math.abs(x0 - _x3) / 2;
+					var r = Math.abs(x0 - _x) / 2;
 					var _height = Math.abs(y0 - _y);
 					_this2.createCircle(_left, _top, r, _height);
 				} else if (_this2.currentMode === MODE_CREATE_POLYGON) {
@@ -198,13 +220,29 @@ var ImageSelector = function () {
 
 		/**
       * switch mode
-      * @param {*} mode 
+      * @param {string} mode 
       */
 
 	}, {
 		key: 'switchMode',
 		value: function switchMode(mode) {
+			/**
+    * if user hit the same MODE, return
+    */
+			if (mode === this.currentMode) {
+				return;
+			}
+
 			console.log('SWITCH_MODE', mode);
+
+			/**
+    * Special case:
+    * current mode: MODE_CREATE_POLYGON
+    */
+			if (this.currentMode === MODE_CREATE_POLYGON) {
+				this.drawPolygon(true);
+			}
+
 			this.currentMode = mode;
 			for (var ctrl in this.controls) {
 				if (this.controls[ctrl].classList.contains('active')) {
@@ -235,7 +273,7 @@ var ImageSelector = function () {
 
 		/**
       * do action on editor
-      * @param {*} action 
+      * @param {string} action 
       */
 
 	}, {
@@ -258,7 +296,7 @@ var ImageSelector = function () {
 
 		/**
       * Add new image to editor
-      * @param {*} imageUrl 
+      * @param {string} imageUrl 
       */
 
 	}, {
@@ -301,7 +339,7 @@ var ImageSelector = function () {
 
 		/**
    * enable / disable selection / object selectable
-   * @param {*} enable 
+   * @param {boolean} enable 
    */
 
 	}, {
@@ -402,10 +440,10 @@ var ImageSelector = function () {
 
 		/**
    * draw rect
-   * @param {*} x 
-   * @param {*} y 
-   * @param {*} width 
-   * @param {*} height 
+   * @param {number} x 
+   * @param {number} y 
+   * @param {number} width 
+   * @param {number} height 
    */
 
 	}, {
@@ -432,10 +470,10 @@ var ImageSelector = function () {
 
 		/**
    * draw circle
-   * @param {*} x 
-   * @param {*} y 
-   * @param {*} r 
-   * @param {*} height 
+   * @param {number} x 
+   * @param {number} y 
+   * @param {number} r 
+   * @param {number} height 
    */
 
 	}, {
@@ -464,7 +502,7 @@ var ImageSelector = function () {
 
 		/**
    * draw polygon
-   * @param {*} lastPoint 
+   * @param {boolean} lastPoint if this param is passed as true the the drawing Polygon will be completed
    */
 
 	}, {
@@ -509,6 +547,7 @@ var ImageSelector = function () {
 
 		/**
    * export to image
+   * @return Array<Image>
    */
 
 	}, {
@@ -533,7 +572,8 @@ var ImageSelector = function () {
 
 		/**
    * Export a selection area to a separated image
-   * @param {*} originalShape 
+   * @param {Object} originalShape this is Fabric Object class
+   * @return Image
    */
 
 	}, {
@@ -560,6 +600,11 @@ var ImageSelector = function () {
 
 			return newImg;
 		}
+
+		/**
+   * @param {HTMLElement} c canvas element
+   */
+
 	}, {
 		key: 'trim',
 		value: function trim(c) {
