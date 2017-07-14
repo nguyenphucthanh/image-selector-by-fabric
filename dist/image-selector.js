@@ -4,6 +4,8 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var MODE_SELECT = 'MODE_SELECT';
@@ -195,6 +197,9 @@ var ImageSelector = function () {
 
 					_this2.drawingPolygonPoints.push(point);
 					_this2.drawPolygon(true);
+
+					// back to SELECT mode
+					_this2.switchMode(MODE_SELECT);
 				}
 			});
 
@@ -240,10 +245,12 @@ var ImageSelector = function () {
     * current mode: MODE_CREATE_POLYGON
     */
 			if (this.currentMode === MODE_CREATE_POLYGON) {
+				this.controls[MODE_CREATE_POLYGON].classList.remove('active');
 				this.drawPolygon(true);
 			}
 
 			this.currentMode = mode;
+
 			for (var ctrl in this.controls) {
 				if (this.controls[ctrl].classList.contains('active')) {
 					this.controls[ctrl].classList.remove('active');
@@ -503,22 +510,25 @@ var ImageSelector = function () {
 		/**
    * draw polygon
    * @param {boolean} lastPoint if this param is passed as true the the drawing Polygon will be completed
+   * @param {string} returnToMode if not specified will return canvas to select mode
    */
 
 	}, {
 		key: 'drawPolygon',
 		value: function drawPolygon(lastPoint) {
+			var _ref;
+
 			// remove previous state of polygon
 			if (this.drawingPolygon) {
 				this.canvas.remove(this.drawingPolygon);
 			}
 
 			// prepare new state of polygon
-			var newPolygon = new fabric.Polygon(this.drawingPolygonPoints, {
+			var newPolygon = new fabric.Polygon(this.drawingPolygonPoints, (_ref = {
 				strokeWidth: 0,
 				fill: 'rgba(255, 255, 255, 0.5)',
 				selectable: false
-			});
+			}, _defineProperty(_ref, 'strokeWidth', 1), _defineProperty(_ref, 'strokeDashArray', [3, 3]), _defineProperty(_ref, 'stroke', '#000000'), _ref));
 
 			// set as currenly drawing polygon, draw to canvas, and set as active
 			this.drawingPolygon = newPolygon;
@@ -534,9 +544,6 @@ var ImageSelector = function () {
 				// reset temp variable of polygon
 				this.drawingPolygon = null;
 				this.drawingPolygonPoints = [];
-
-				// back to SELECT mode
-				this.switchMode(MODE_SELECT);
 
 				// push new Polygon to selection array
 				this.polygonSelections.push(newPolygon);

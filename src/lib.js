@@ -163,6 +163,9 @@ class ImageSelector {
 				
 				this.drawingPolygonPoints.push(point);
 				this.drawPolygon(true);
+				
+				// back to SELECT mode
+				this.switchMode(MODE_SELECT);
 			}
 		});
 
@@ -203,10 +206,12 @@ class ImageSelector {
 		 * current mode: MODE_CREATE_POLYGON
 		 */
 		if (this.currentMode === MODE_CREATE_POLYGON) {
+			this.controls[MODE_CREATE_POLYGON].classList.remove('active');
 			this.drawPolygon(true);
 		}
 
 		this.currentMode = mode;
+
 		for (let ctrl in this.controls) {
 			if (this.controls[ctrl].classList.contains('active')) {
 				this.controls[ctrl].classList.remove('active');
@@ -429,6 +434,7 @@ class ImageSelector {
 	/**
 	 * draw polygon
 	 * @param {boolean} lastPoint if this param is passed as true the the drawing Polygon will be completed
+	 * @param {string} returnToMode if not specified will return canvas to select mode
 	 */
 	drawPolygon(lastPoint) {
 		// remove previous state of polygon
@@ -440,7 +446,10 @@ class ImageSelector {
 		let newPolygon = new fabric.Polygon(this.drawingPolygonPoints, {
 			strokeWidth: 0,
 			fill: 'rgba(255, 255, 255, 0.5)',
-			selectable: false
+			selectable: false,
+			strokeWidth: 1,
+			strokeDashArray: [3, 3],
+			stroke: '#000000'
 		});
 
 		// set as currenly drawing polygon, draw to canvas, and set as active
@@ -457,9 +466,6 @@ class ImageSelector {
 			// reset temp variable of polygon
 			this.drawingPolygon = null;
 			this.drawingPolygonPoints = [];
-
-			// back to SELECT mode
-			this.switchMode(MODE_SELECT);
 
 			// push new Polygon to selection array
 			this.polygonSelections.push(newPolygon);
